@@ -1,4 +1,4 @@
-# 🚀 Intent-Aware & Explainable Hybrid Retrieval System
+# Intent-Aware & Explainable Hybrid Retrieval System
 
 **Transforming Candidate Search from a Black Box into a Glass Box.**
 
@@ -6,17 +6,17 @@ This repository contains a production-grade, multi-stage hybrid retrieval system
 
 ---
 
-## 💎 Key Differentiators
+## Key Differentiators
 
-*   **🔍 "Glass Box" Explainability**: Every result is backed by a visual score decomposition (BM25, HNSW, Graph, Neural) and an interactive knowledge graph.
-*   **⚖️ Intent-Aware Weighting**: Automatically detects query intent (e.g., skill-focused vs. role-focused) to dynamically adjust retrieval weights.
-*   **🕸️ Relational Intelligence**: Leverages **Neo4j** to compute candidate-skill proximity and role similarity beyond simple text matching.
-*   **🧠 Neural Re-ranking**: Uses a **ColBERT-inspired late interaction** model (MaxSim) to refine top candidates for maximum relevance.
-*   **🛡️ Deterministic & Reliable**: Unlike LLM-only pipelines, our system is 100% reproducible, zero API cost, and enforces hard logical constraints (e.g., experience requirements).
+*   **"Glass Box" Explainability**: Every result is backed by a visual score decomposition (BM25, HNSW, Graph, Neural) and an interactive knowledge graph.
+*   **Intent-Aware Weighting**: Automatically detects query intent (e.g., skill-focused vs. role-focused) to dynamically adjust retrieval weights.
+*   **Relational Intelligence**: Leverages **Neo4j** to compute candidate-skill proximity and role similarity beyond simple text matching.
+*   **Neural Re-ranking**: Uses a **ColBERT-inspired late interaction** model (MaxSim) to refine top candidates for maximum relevance.
+*   **Deterministic & Reliable**: Unlike LLM-only pipelines, our system is 100% reproducible, zero API cost, and enforces hard logical constraints (e.g., experience requirements).
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 The system utilizes a **Recall → Precision** staged pipeline to balance speed and accuracy at scale.
 
@@ -31,7 +31,7 @@ The system utilizes a **Recall → Precision** staged pipeline to balance speed 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 *   **Backend**: Python, FastAPI, Pydantic
 *   **Databases**: 
@@ -43,7 +43,7 @@ The system utilizes a **Recall → Precision** staged pipeline to balance speed 
 
 ---
 
-## 📈 Performance & Evaluation
+## Performance & Evaluation
 
 ### **1. Professional IR Metrics**
 Evaluated on a curated 10-query benchmark with manually validated ground truth:
@@ -59,7 +59,7 @@ Metrics adapted for deterministic retrieval (Context treated as Profile, Answer 
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### **1. Prerequisites**
 *   Python 3.10+
@@ -87,11 +87,11 @@ Visit `http://localhost:8000` to explore the Search Intelligence Dashboard.
 
 ---
 
-## ⚠️ Limitations & Future Work
+## Limitations & Future Work
 *   **Graph Depth**: Current relational signals prioritize 2-hop skill/role overlap; path-based reasoning is a future roadmap item.
 *   **Scale**: Optimized for ~2k profiles on CPU; horizontal scaling strategy includes distributed HNSW shards.
 
 ---
 
-## 📄 License
+## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
