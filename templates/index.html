@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Semantic Retrieval | Search Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --card-bg: rgba(22, 27, 34, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.3);
+            --cyan: #06b6d4;
+            --text: #e6edf3;
+            --text-muted: #848d97;
+            --accent: #7c3aed;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            height: 100vh;
+        }
+
+        /* ─── Main Content ─── */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+            border-right: 1px solid var(--card-border);
+        }
+
+        header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text), var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ─── Search Bar ─── */
+        .search-area {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: var(--bg);
+            padding-bottom: 1.5rem;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            background: var(--card-bg);
+            padding: 0.5rem;
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .search-form input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .search-form select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text);
+            border-radius: 0.5rem;
+            padding: 0 1rem;
+            outline: none;
+        }
+
+        .search-form button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.6rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-form button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        /* ─── Intelligence Panel ─── */
+        .intel-panel {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .intel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .intel-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .intel-stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .intel-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .badge-intent { background: var(--primary); color: white; border: none; }
+        .badge-filter { background: rgba(6, 182, 212, 0.1); color: var(--cyan); border-color: rgba(6, 182, 212, 0.3); }
+
+        /* ─── Result Cards ─── */
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card:hover {
+            border-color: rgba(79, 70, 229, 0.4);
+            transform: scale(1.005);
+            background: rgba(22, 27, 34, 0.85);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .cand-info h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .cand-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .score-pill {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.6rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: 1px solid var(--card-border);
+        }
+
+        .summary-line {
+            font-size: 0.95rem;
+            color: var(--cyan);
+            font-style: italic;
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+
+        /* ─── Metrics Grid ─── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .metric-group h4 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .score-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .score-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .bar-label { font-size: 0.7rem; width: 60px; color: var(--text-muted); }
+        .bar-bg { flex: 1; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 3px; }
+        .bar-val { font-size: 0.7rem; width: 35px; text-align: right; font-weight: 600; }
+
+        .fill-bm25 { background: #f59e0b; }
+        .fill-faiss { background: #3b82f6; }
+        .fill-graph { background: #8b5cf6; }
+        .fill-colbert { background: #ec4899; }
+
+        /* ─── Expandable Details ─── */
+        .why-button {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+
+        .why-button:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .details-content {
+            display: none;
+            padding-top: 1rem;
+            border-top: 1px solid var(--card-border);
+            margin-top: 1rem;
+            font-size: 0.88rem;
+            line-height: 1.6;
+        }
+
+        /* ─── Sidebar Graph ─── */
+        .sidebar {
+            background: rgba(13, 17, 23, 0.5);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .sidebar-header h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        #graph-panel {
+            flex: 1;
+            position: relative;
+        }
+
+        svg#sidebar-graph { width: 100%; height: 100%; }
+
+        .node-label { font-size: 8px; fill: var(--text-muted); pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="layout">
+        <!-- Left Panel: Search & Results -->
+        <main class="main-content">
+            <header>
+                <h1>Dynamic Semantic Retrieval</h1>
+                <div class="intel-stats">
+                    <span>BM25 + FAISS + Neo4j + ColBERT</span>
+                </div>
+            </header>
+
+            <div class="search-area">
+                <form action="/search" method="post" class="search-form">
+                    <input type="text" name="query" value="{{ query }}" placeholder="Search for candidates (e.g. 'Senior Python Dev with 5 years exp')">
+                    <select name="limit">
+                        <option value="5" {% if limit=='5' %}selected{% endif %}>5 Results</option>
+                        <option value="10" {% if limit=='10' or not limit %}selected{% endif %}>10 Results</option>
+                        <option value="20" {% if limit=='20' %}selected{% endif %}>20 Results</option>
+                    </select>
+                    <button type="submit">Retrieve</button>
+                </form>
+            </div>
+
+            {% if intent %}
+            <div class="intel-panel">
+                <div class="intel-header">
+                    <div class="intel-title">
+                        <span style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; box-shadow:0 0 10px #10b981; margin-right:4px;"></span>
+                        🧠 Search Intelligence
+                    </div>
+                    <div class="intel-stats">
+                        <span title="RAGAS-inspired evaluation adapted for deterministic retrieval systems">📊 Research-Grade Evaluation</span>
+                        <span>⏱️ {{ intent.latency_ms }}ms</span>
+                    </div>
+                </div>
+                <div class="intel-badges">
+                    <span class="badge badge-intent">Intent: {{ intent.intent_type|replace('_', ' ')|title }}</span>
+                    {% if intent.min_experience %}
+                    <span class="badge badge-filter">📅 {{ intent.min_experience }}+ Years Required</span>
+                    {% endif %}
+                    {% for s in intent.extracted_skills %}
+                    <span class="badge">🔧 {{ s }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="results-container">
+                {% if results %}
+                    {% for res in results %}
+                    <div class="result-card">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, var(--primary), var(--cyan));"></div>
+                        <div class="card-header">
+                            <div class="cand-info">
+                                <div style="display:flex; align-items:center; gap:0.75rem;">
+                                    <span style="background:var(--primary); color:white; font-size:0.65rem; font-weight:800; padding:2px 6px; border-radius:4px; text-transform:uppercase;">Rank {{ loop.index }}</span>
+                                    <h2 style="margin:0;">{{ res.profile.name or "Anonymous Candidate" }}</h2>
+                                </div>
+                                <div class="cand-meta">
+                                    <span>📅 {{ res.profile.years_of_experience }} Years Exp</span>
+                                    <span>💼 {{ (res.profile.potential_roles or "Professional").split(',')[0] }}</span>
+                                </div>
+                            </div>
+                            <div class="score-pill">
+                                <span style="font-size:0.6rem; color:var(--text-muted); display:block; text-align:center; margin-bottom:2px;">MATCH</span>
+                                {{ "%.2f"|format(res.score) }}
+                            </div>
+                        </div>
+
+                        <div class="summary-line" style="background: rgba(255,255,255,0.03); padding: 0.75rem 1rem; border-radius: 0.75rem; border-left: 2px solid var(--cyan);">
+                            "{{ res.explanation }}"
+                        </div>
+
+                        <div class="metrics-grid">
+                            {% if res.explanation_detail %}
+                            <!-- Score Breakdown -->
+                            <div class="metric-group">
+                                <h4>Pipeline Weights</h4>
+                                <div class="score-bar-container">
+                                    <div class="score-bar-row">
+                                        <div class="bar-label">Lexical</div>
+                                        <div class="bar-bg"><div class="bar-fill fill-bm25" style="width: {{ (res.explanation_detail.bm25_score or 0) * 100 }}%"></div></div>
+                                        <div class="bar-val">{{ "%.2f"|format(res.explanation_detail.bm25_score or 0) }}</div>
+                                    </div>
+                                    <div class="score-bar-row">
+                                        <div class="bar-label">Semantic</div>
+                                        <div class="bar-bg"><div class="bar-fill fill-faiss" style="width: {{ (res.explanation_detail.faiss_score or 0) * 100 }}%"></div></div>
+                                        <div class="bar-val">{{ "%.2f"|format(res.explanation_detail.faiss_score or 0) }}</div>
+                                    </div>
+                                    <div class="score-bar-row">
+                                        <div class="bar-label">Graph</div>
+                                        <div class="bar-bg"><div class="bar-fill fill-graph" style="width: {{ (res.explanation_detail.graph_score or 0) * 100 }}%"></div></div>
+                                        <div class="bar-val">{{ "%.2f"|format(res.explanation_detail.graph_score or 0) }}</div>
+                                    </div>
+                                    <div class="score-bar-row">
+                                        <div class="bar-label">Rerank</div>
+                                        <div class="bar-bg"><div class="bar-fill fill-colbert" style="width: {{ (res.explanation_detail.reranker_score or 0) * 100 }}%"></div></div>
+                                        <div class="bar-val">{{ "%.2f"|format(res.explanation_detail.reranker_score or 0) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Graph Intelligence -->
+                            <div class="metric-group">
+                                <h4>Graph Intelligence</h4>
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                    <div style="display:flex; justify-content: space-between; font-size: 0.85rem;">
+                                        <span>Skill Overlap</span>
+                                        <span style="color:var(--cyan);">
+                                            {% if res.explanation_detail.graph_features %}
+                                                {{ "%.0f"|format((res.explanation_detail.graph_features.skill_overlap or 0) * 100) }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div style="display:flex; justify-content: space-between; font-size: 0.85rem;">
+                                        <span>Role Match</span>
+                                        <span style="color:var(--accent);">
+                                            {% if res.explanation_detail.graph_features %}
+                                                {{ "%.0f"|format((res.explanation_detail.graph_features.role_similarity or 0) * 100) }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                        Signals derived from Neo4j relational distance.
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div style="grid-column: span 2; font-size: 0.8rem; color: var(--text-muted);">
+                                Detailed explanation metrics unavailable for this result.
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <button class="why-button" onclick="toggleDetails(this)">Why this result?</button>
+                        <div class="details-content">
+                            <p style="margin-bottom: 0.5rem;"><strong>Core Skills:</strong> {{ res.profile.core_skills }}</p>
+                            {% if res.explanation_detail %}
+                            <p><strong>Explainability:</strong> This candidate was prioritized because they matched {{ res.explanation_detail.lexical_matches|length }} lexical terms and showed a {{ "%.0f"|format((res.explanation_detail.faiss_score or 0)*100) }}% semantic alignment with the query intent.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align:center; padding: 4rem; color: var(--text-muted);">
+                        Enter a query above to explore the candidate pool.
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+
+        <!-- Right Panel: Graph Visualization -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>🕸️ Knowledge Graph</h3>
+                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">Interactive Relational View</p>
+            </div>
+            <div id="graph-panel">
+                <svg id="sidebar-graph"></svg>
+                <div style="position: absolute; top: 1rem; right: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button onclick="zoomIn()" style="width: 30px; height: 30px; background: rgba(0,0,0,0.5); border: 1px solid var(--card-border); color: white; border-radius: 4px; cursor: pointer;">+</button>
+                    <button onclick="zoomOut()" style="width: 30px; height: 30px; background: rgba(0,0,0,0.5); border: 1px solid var(--card-border); color: white; border-radius: 4px; cursor: pointer;">-</button>
+                    <button onclick="resetZoom()" style="width: 30px; height: 30px; background: rgba(0,0,0,0.5); border: 1px solid var(--card-border); color: white; border-radius: 4px; cursor: pointer;">⌖</button>
+                </div>
+            </div>
+            <div style="padding: 1.5rem; border-top: 1px solid var(--card-border); font-size: 0.7rem; color: var(--text-muted);">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom: 0.4rem;">
+                    <div style="width:8px; height:8px; border-radius:50%; background:var(--primary);"></div> Skill Node
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <div style="width:8px; height:8px; border-radius:50%; background:var(--cyan);"></div> Candidate Node
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        function toggleDetails(btn) {
+            const content = btn.nextElementSibling;
+            const isVisible = content.style.display === 'block';
+            content.style.display = isVisible ? 'none' : 'block';
+            btn.textContent = isVisible ? 'Why this result?' : 'Hide details';
+        }
+
+        // ─── D3.js Sidebar Graph (Enhanced) ───
+        async function initGraph() {
+            try {
+                const res = await fetch('/graph-data?max_skills=25&max_candidates=15');
+                const data = await res.json();
+                
+                const container = document.getElementById('graph-panel');
+                const W = container.clientWidth;
+                const H = container.clientHeight;
+                
+                const svg = d3.select('#sidebar-graph');
+                svg.selectAll('*').remove(); // Clear
+                
+                // Add a layer for zooming
+                const g = svg.append('g');
+                
+                const zoom = d3.zoom()
+                    .scaleExtent([0.1, 5])
+                    .on('zoom', (event) => g.attr('transform', event.transform));
+                
+                svg.call(zoom);
+
+                // Initial Zoom
+                svg.call(zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(0.8));
+
+                const simulation = d3.forceSimulation(data.nodes)
+                    .force('link', d3.forceLink(data.edges).id(d => d.id).distance(60))
+                    .force('charge', d3.forceManyBody().strength(-120))
+                    .force('collision', d3.forceCollide().radius(20))
+                    .force('center', d3.forceCenter(0, 0));
+
+                const link = g.append('g')
+                    .attr('stroke', 'rgba(255,255,255,0.08)')
+                    .selectAll('line')
+                    .data(data.edges)
+                    .join('line');
+
+                const node = g.append('g')
+                    .selectAll('g')
+                    .data(data.nodes)
+                    .join('g')
+                    .attr('cursor', 'pointer')
+                    .call(d3.drag()
+                        .on('start', dragstarted)
+                        .on('drag', dragged)
+                        .on('end', dragended));
+
+                node.append('circle')
+                    .attr('r', d => d.type === 'skill' ? 7 : 5)
+                    .attr('fill', d => d.type === 'skill' ? '#4f46e5' : '#06b6d4')
+                    .attr('stroke', 'rgba(255,255,255,0.2)')
+                    .attr('stroke-width', 1);
+
+                node.append('text')
+                    .text(d => d.label)
+                    .attr('x', 9)
+                    .attr('y', 3)
+                    .style('font-size', '8px')
+                    .style('fill', 'var(--text-muted)')
+                    .style('pointer-events', 'none')
+                    .style('opacity', d => d.type === 'skill' ? 1 : 0.6);
+
+                // ─── Interaction ───
+                const connectedTo = new Map();
+                data.edges.forEach(e => {
+                    const s = e.source.id || e.source;
+                    const t = e.target.id || e.target;
+                    if (!connectedTo.has(s)) connectedTo.set(s, new Set());
+                    if (!connectedTo.has(t)) connectedTo.set(t, new Set());
+                    connectedTo.get(s).add(t);
+                    connectedTo.get(t).add(s);
+                });
+
+                node.on('mouseover', (event, d) => {
+                    const neighbors = connectedTo.get(d.id) || new Set();
+                    node.style('opacity', n => (n.id === d.id || neighbors.has(n.id)) ? 1 : 0.1);
+                    link.style('opacity', e => {
+                        const s = e.source.id || e.source;
+                        const t = e.target.id || e.target;
+                        return (s === d.id || t === d.id) ? 1 : 0.05;
+                    }).attr('stroke', e => (e.source.id === d.id || e.target.id === d.id) ? '#4f46e5' : 'rgba(255,255,255,0.08)');
+                }).on('mouseout', () => {
+                    node.style('opacity', 1);
+                    link.style('opacity', 1).attr('stroke', 'rgba(255,255,255,0.08)');
+                });
+
+                simulation.on('tick', () => {
+                    link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                    node.attr('transform', d => `translate(${d.x},${d.y})`);
+                });
+
+                function dragstarted(event) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    event.subject.fx = event.subject.x;
+                    event.subject.fy = event.subject.y;
+                }
+                function dragged(event) {
+                    event.subject.fx = event.x;
+                    event.subject.fy = event.y;
+                }
+                function dragended(event) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    event.subject.fx = null;
+                    event.subject.fy = null;
+                }
+
+                // Global controls
+                window.zoomIn = () => svg.transition().call(zoom.scaleBy, 1.5);
+                window.zoomOut = () => svg.transition().call(zoom.scaleBy, 0.67);
+                window.resetZoom = () => svg.transition().call(zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(0.8));
+
+            } catch (e) {
+                console.error("Graph init failed:", e);
+            }
+        }
+
+        initGraph();
+    </script>
+</body>
+</html>

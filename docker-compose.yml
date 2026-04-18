@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────────
+# docker-compose.yml
+#
+# Runs: FastAPI app only.
+# Neo4j is NOT included here because you are using Neo4j Aura (cloud).
+# Your .env file supplies the Aura connection details automatically.
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  app:
+    build: .
+    container_name: semantic_retrieval
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env                      # loads NEO4J_URI, NEO4J_USERNAME, etc.
+    volumes:
+      - ./data:/app/data          # profiles.csv persists across restarts
+      - ./src:/app/src            # live code reload during development
+    restart: unless-stopped
