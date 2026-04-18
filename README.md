@@ -20,6 +20,50 @@ This repository contains a production-grade, multi-stage hybrid retrieval system
 
 The system utilizes a **Recall → Precision** staged pipeline to balance speed and accuracy at scale.
 
+```mermaid
+graph TD
+    A[User Query] --> B{Query Intelligence}
+    B --> B1[Intent Detection]
+    B --> B2[Constraint Extraction]
+    
+    B1 --> C[Hybrid Retrieval Stage 1]
+    B2 --> C
+    
+    subgraph Stage1 [Stage 1: Parallel Recall]
+        direction LR
+        D1[BM25 Lexical Search]
+        D2[FAISS Semantic Search]
+    end
+    
+    C --> D1
+    C --> D2
+    
+    D1 --> E{Logical Filter}
+    D2 --> E
+    
+    E -->|Filtered Candidates| F[Relational Enrichment]
+    
+    subgraph GraphDB [Neo4j Knowledge Graph]
+        direction LR
+        G[Skill Proximity]
+        H[Role Similarity]
+    end
+    
+    F --> G
+    F --> H
+    
+    G --> I[Stage 2: Neural Re-ranking]
+    H --> I
+    
+    I --> J[Explainability Layer]
+    J --> K[Search Intelligence Dashboard]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:4px
+    style K fill:#bbf,stroke:#333,stroke-width:4px
+    style Stage1 fill:#f5f5f5,stroke:#333,stroke-dasharray: 5 5
+    style GraphDB fill:#e1f5fe,stroke:#01579b,stroke-dasharray: 5 5
+```
+
 1.  **Query Intelligence**: Extracts skills, roles, and experience constraints using NLP.
 2.  **Stage 1: High Recall (Parallel)**:
     *   **Lexical**: BM25 for exact keyword precision.
